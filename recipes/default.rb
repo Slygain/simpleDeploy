@@ -3,7 +3,7 @@
 # Recipe:: default
 #
 # Author: Kelso (Agnostos|Slygain)
-#
+# Script Assumes that ruby version is 2.0.0 or better
 # Copyright (c) 2015 The Authors, All Rights Reserved.
 
 
@@ -12,31 +12,35 @@ appURL = 'git://github.com/tnh/simple-sinatra-app.git'
 
 #install required packages
 package 'ruby'
+package 'rdoc' #otherwise gem install fails
 package 'git'
 
+
 #install gem
-# Note: There is copy of gem in chef, however it relies on the copy of ruby and gem included with chef. 
-# We'll grab the latest version from github
-
 # grab latest copy off github
-
 git '/tmp/rubyGem' do
   repository 'git://github.com/rubygems/rubygems.git'
   revision 'master'
   action :checkout
 end
+
 # run the gem installer
 execute 'gemInstall' do
   command 'ruby /tmp/rubyGem/setup.rb'
-  ignore_failure
+  ignore_failure true
 end
 
-
 #install sinatra
-
-#check if sinatra installed (TODO: Remove me)
+gem_package 'sinatra' do
+  action :install
+end
 
 #get current copy of sinatra application
+git '/tmp/rubyGem' do
+  repository 'git://github.com/rubygems/rubygems.git'
+  revision 'master'
+  action :checkout
+end
 
 #deploy copy of sinatra application
 
