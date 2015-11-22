@@ -83,7 +83,7 @@ http {
     server {
         listen 80;
         server_name _;
-        root /root/apps/sinatraApp/public;
+        root /root/apps/sinatraApp;
         passenger_enabled on;
 
         # redirect server error pages to the static page /50x.html
@@ -101,10 +101,10 @@ execute "reload Nginx" do
     user "root"
 end
 
-# add these rules to the firewall so that it's extnerally accessible
-#sudo firewall-cmd --permanent --zone=public --add-service=http 
-#sudo firewall-cmd --permanent --zone=public --add-service=https
-#sudo firewall-cmd --reload
+# allows port 80 to be accessible externally
+execute "add firewall rules" do
+command 'sudo firewall-cmd --permanent --zone=public --add-service=http ;sudo firewall-cmd --permanent --zone=public --add-service=https;sudo firewall-cmd --reload '
+end
 
 
 
