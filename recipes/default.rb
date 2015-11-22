@@ -33,9 +33,6 @@ service 'nginx' do
   action [ :enable, :start ]
 end
 
-
-
-
 #install sinatra
 gem_package 'sinatra' do
   action :install
@@ -53,7 +50,11 @@ git '/tmp/sinatraApp' do
   action :checkout
 end
 # Move out application somewhere more sane
-execute "Move sinatraApp" do
+execute "create sinatraApp Directory" do
+    command "mkdir -p ~/apps"
+    user "root"
+end
+execute "copy sinatraApp" do
     command "cp -rf /tmp/sinatraApp ~/apps/sinatraApp"
     user "root"
 end
@@ -62,6 +63,36 @@ end
 execute 'bundle install' do
   cwd '/root/apps/sinatraApp'
   command 'bundle install'
+end
+
+# write over the top of the nginx configuration file
+#TODO: shift to template.
+file '/etc/nginx/nginx.conf' do
+  content '
+worker_processes  1;
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+    
+    server {
+        listen 80;
+        server_name _;
+        root /root/apps/sinatraApp/public;
+        passenger_enabled on;
+
+        # redirect server error pages to the static page /50x.html
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+}'
 end
 
 #reload nginx 
