@@ -10,23 +10,26 @@
 # setup variables with known file locations so recipe can re-used for other applications
 # Currently assumes user is root
 
-#install required packages
-package 'ruby'
-package 'git'
-# needed to allow us to install nginx & Phusion
-package 'epel-release'
-
 #add passenger repository
 execute 'Phusion addition' do
   command 'curl --fail -sSLo /etc/yum.repos.d/passenger.repo https://oss-binaries.phusionpassenger.com/yum/definitions/el-passenger.repo'
 end
 
-# finish with package manipulation
+# work around for having a new repository and needing it to accept the gpg key
+execute 'manual Ruby Install' do
+  command 'yum install ruby -y'
+end
+
+#install required packages
+package 'git'
+# needed to allow us to install nginx & Phusion
+package 'epel-release'
 package 'nginx'
 package 'passenger'
 
-# work out how to manipulate /etc/nginx/conf.d/passenger.conf - uncomment 3 lines
 
+# work out how to manipulate /etc/nginx/conf.d/passenger.conf - uncomment 3 lines
+# TODO: May not need to do this afterall
 
 #setup services related to nginx
 service 'nginx' do 
@@ -67,6 +70,7 @@ end
 
 # write over the top of the nginx configuration file
 #TODO: shift to template.
+# grabs the passenger broadcast from port 3000 and pushes it across to port 80
 file '/etc/nginx/nginx.conf' do
   content '
 worker_processes  1;
@@ -82,9 +86,11 @@ http {
     
     server {
         listen 80;
-        server_name _;
-        root /root/apps/sinatraApp;
-        passenger_enabled on;
+        server_name localhost;
+        
+        location ~ \ {
+        proxy_pass http://127.0.0.1:3000;
+        }
 
         # redirect server error pages to the static page /50x.html
         error_page   500 502 503 504  /50x.html;
@@ -101,9 +107,37 @@ execute "reload Nginx" do
     user "root"
 end
 
+#create a service for our passenger
+file '/usr/lib/systemd/system/sinatraApp.service' do
+    content'
+    [Unit]
+Description=The sinatraApplication
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/passenger start -d ~/apps/sinatraApp
+ExecReload=/usr/bin/passenger stop; /usr/bin/passenger start -d ~/apps/sinatraApp
+KillMode=process
+# Sleep for 1 second to give PassengerAgent a chance to clean up.
+ExecStop=passenger stop; /bin/sleep 1
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
+    '
+end
+
+# setup passenger service
+service "sinatraApp" do
+    action [ :enable, :start ]
+end
+
 # allows port 80 to be accessible externally
 execute "add firewall rules" do
-command 'sudo firewall-cmd --permanent --zone=public --add-service=http ;sudo firewall-cmd --permanent --zone=public --add-service=https;sudo firewall-cmd --reload '
+command 'firewall-cmd --permanent --zone=public --add-service=http ;firewall-cmd --permanent --zone=public --add-service=https;firewall-cmd --reload '
 end
 
 
