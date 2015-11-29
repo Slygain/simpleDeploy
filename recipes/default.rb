@@ -82,11 +82,12 @@ end
 
 #create rule to allow port 80 to be accessible
 execute "add firewall rules" do
-command 'firewall-cmd --permanent --zone=public --add-service=http ;firewall-cmd --permanent --zone=public --add-service=https;firewall-cmd --reload '
+command 'firewall-cmd --permanent --zone=public --add-service=http ;firewall-cmd --reload '
 end
 
 #finally restart apache to allow all the changes made to propogate
 service 'httpd' do
   action [:restart]
 end
+
 
