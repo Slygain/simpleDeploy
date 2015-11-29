@@ -59,10 +59,8 @@ file '/etc/httpd/conf.d/sinatra.conf' do
 '
 end
 
-#create directories that will be needed to run the sinatra Application
-%w[ /var/www/apps /var/www/apps/sinatraApp /var/www/apps/sinatraApp/public /var/www/apps/sinatraApp/tmp].each do |pathy|
-  directory pathy do
-  end
+#create apps directory
+directory '/var/www/apps' do
 end
 
 git '/var/www/apps/sinatraApp' do
@@ -74,6 +72,12 @@ end
 execute 'bundle install' do
   cwd '/var/www/apps/sinatraApp'
   command 'bundle install'
+end
+
+#create directories that will be needed to run the sinatra Application
+%w[ /var/www/apps/sinatraApp/public /var/www/apps/sinatraApp/tmp].each do |pathy|
+  directory pathy do
+  end
 end
 
 #create rule to allow port 80 to be accessible
